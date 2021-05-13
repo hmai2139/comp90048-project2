@@ -1,4 +1,3 @@
---{-# OPTIONS -Wall #-} 
 -- Replace this comment with your opening documentation.  Leave this module declaration as is:
 module Proj2 (feedback, initialGuess, nextGuess, GameState) where
 
@@ -30,13 +29,15 @@ feedback (card:cards) guess =
           guessRanks  = map rank guess         
           answerSuits = map suit (card:cards)  
           guessSuits  = map suit guess         
-        
-          exactInc  | card `elem` guess              = 1 
-                    | otherwise                      = 0
-          lowerInc  | rank card < minimum guessRanks = 1  
-                    | otherwise                      = 0
-          higherInc | rank card > maximum guessRanks = 1
-                    | otherwise                      = 0
+          exactInc 
+              | card `elem` guess              = 1 
+              | otherwise                      = 0
+          lowerInc
+              | rank card < minimum guessRanks = 1  
+              | otherwise                      = 0
+          higherInc
+              | rank card > maximum guessRanks = 1
+              | otherwise                      = 0
         
 {- | Takes the number of cards in the answer as input and 
      returns a pair of an initial guess, 
@@ -47,21 +48,15 @@ initialGuess
     -> ([Card], GameState)  -- Represents a guess.
 initialGuess n = (cards, gameState)
     where cards = [Card s r | (s, r) <- zip suits ranks]
-          distance = max 1 (13 `div` (n + 1))
-          r1 = (iterate succ minBound) !! distance
-          r2 = (iterate succ r1) !! distance
-          rn = (iterate pred maxBound) !! distance
-          ranks | n < 13    = take n (cycle (enumFromThenTo r1 r2 rn :: [Rank]))
-                | otherwise = take n (cycle [minBound..maxBound] :: [Rank])
+          dist = max 1 (13 `div` (n + 1))
+          r1 = (iterate succ minBound) !! dist
+          r2 = (iterate succ r1) !! dist
+          rn = (iterate pred maxBound) !! dist
+          ranks
+              | n < 13    = take n (cycle (enumFromThenTo r1 r2 rn :: [Rank]))
+              | otherwise = take n (cycle [minBound..maxBound] :: [Rank])
           suits = take n (cycle [minBound..maxBound] :: [Suit])     
-          gameState
-              | n <  1    = error "Invalid input value for n."
-              | n == 1    = map (:[]) ([minBound..maxBound]::[Card])
-              | otherwise = combs n (c:cs)
-          (c:cs) = [minBound..maxBound] :: [Card]
-          combs 0 _ = [[]]
-          combs _ [] = []
-          combs n (x:xs) = map (x:) (combs (n - 1) xs) ++ combs n xs
+          gameState = []
  
 
 {- | Takes as input a pair of the previous guess and game state, 
@@ -73,19 +68,25 @@ nextGuess
     :: ([Card], GameState)        -- Represents the previous guess & game state.
     -> (Int, Int, Int, Int, Int)  -- Quintuple of Ints representing feedback.
     -> ([Card], GameState)        -- Represents the next guess.
-nextGuess prevGuessAndState prevFeedback = (cards, newState)
+nextGuess (guess, state) prevFeedback = (cards, newState)
     where cards = head (sortOn (\ g -> avgAnsNum g) answers)
-          answers = filter (\ ans -> (feedback ans guess) == prevFeedback) state
-          guess = fst prevGuessAndState
-          state = snd prevGuessAndState
           newState = delete cards answers
+          answers
+              | state /= [] = filter (\ a -> (feedback a guess) == prevFeedback) state
+              | otherwise   = filter (\ a -> (feedback a guess) == prevFeedback) (combs (length guess) deck)
+          deck = [minBound..maxBound] :: [Card]
           
+          -- All combinations of length `n` of a given list.
+          combs 0 _ = [[]]
+          combs _ [] = []
+          combs n (x:xs) = map (x:) (combs (n - 1) xs) ++ combs n xs
+                    
           -- Group possible Answers to a given Guess by their feedback.
-          sortedAns g = sortOn (\ans -> feedback ans g) answers
-          groupedAns g = groupBy (\a1 a2 -> feedback a1 g == feedback a2 g) (sortedAns g)
-          
+          sorted g = sortOn (\ans -> feedback ans g) answers
+          grouped g = groupBy (\a1 a2 -> feedback a1 g == feedback a2 g) (sorted g)
+                   
           -- Expected number of remaining possible Answers for a given Guess.
-          groupSizes g = map length (groupedAns g)
+          groupSizes g = map length (grouped g)
           groupSizesSquared g = map (^2) (groupSizes g)
           avgAnsNum g = fromIntegral (sum (groupSizesSquared g))
                       / fromIntegral (sum (groupSizes g))
