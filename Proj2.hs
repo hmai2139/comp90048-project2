@@ -54,10 +54,15 @@ initialGuess n = (cards, gameState)
           ranks | n < 13    = take n (cycle (enumFromThenTo r1 r2 rn :: [Rank]))
                 | otherwise = take n (cycle [minBound..maxBound] :: [Rank])
           suits = take n (cycle [minBound..maxBound] :: [Suit])     
-          gameState = combinations n decks
-          combinations n decks = filter ((n==).length) (subsequences decks)
-          decks = [minBound..maxBound] :: [Card]
-
+          gameState
+              | n <  1    = error "Invalid input value for n."
+              | n == 1    = map (:[]) ([minBound..maxBound]::[Card])
+              | otherwise = combs n (c:cs)
+          (c:cs) = [minBound..maxBound] :: [Card]
+          combs 0 _ = [[]]
+          combs _ [] = []
+          combs n (x:xs) = map (x:) (combs (n - 1) xs) ++ combs n xs
+ 
 
 {- | Takes as input a pair of the previous guess and game state, 
      and the feedback to this guess as a quintuple of counts of correct cards, 
@@ -69,27 +74,18 @@ nextGuess
     -> (Int, Int, Int, Int, Int)  -- Quintuple of Ints representing feedback.
     -> ([Card], GameState)        -- Represents the next guess.
 nextGuess prevGuessAndState prevFeedback = (cards, newState)
-    where cards = (filter (\ g -> avgAnsNum g == minAvgAnsNum) answers) !! 0
-          --cards = answers !! 0
-          newState = delete cards answers
+    where cards = head (sortOn (\ g -> avgAnsNum g) answers)
           answers = filter (\ ans -> (feedback ans guess) == prevFeedback) state
-          --answers = state
           guess = fst prevGuessAndState
           state = snd prevGuessAndState
+          newState = delete cards answers
           
           -- Group possible Answers to a given Guess by their feedback.
+          sortedAns g = sortOn (\ans -> feedback ans g) answers
           groupedAns g = groupBy (\a1 a2 -> feedback a1 g == feedback a2 g) (sortedAns g)
-          sortedAns g = sortOn (feedback g) answers
           
           -- Expected number of remaining possible Answers for a given Guess.
           groupSizes g = map length (groupedAns g)
           groupSizesSquared g = map (^2) (groupSizes g)
           avgAnsNum g = fromIntegral (sum (groupSizesSquared g))
                       / fromIntegral (sum (groupSizes g))
-          
-          -- Find the minimum expected number of possible Answers.
-          avgAnsNums = map avgAnsNum answers
-          minAvgAnsNum = minimum avgAnsNums
-           
---sortOn (feedback [Card Club R3, Card Heart R4]) [[Card Club R3, Card Heart R4] , [Card Club R3, Card Heart R3], [Card Club R3, Card Heart R4], [Card Heart R3, Card Club R3]]
---groupBy (\x y-> feedback x [Card Club R3, Card Heart R4] ==feedback y [Card Club R3, Card Heart R4]) (sortOn (feedback [Card Club R3, Card Heart R4]) [[Card Club R3, Card Heart R4] , [Card Club R3, Card Heart R3], [Card Club R3, Card Heart R4], [Card Heart R3, Card Club R3]])
