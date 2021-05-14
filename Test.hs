@@ -5,7 +5,8 @@ import Card
 main :: IO ()
 main = 
     test [Card Club R2, Card Heart R7, Card Spade Ace]
-
+    --test [Card Club R2, Card Spade Ace]
+    
 combs :: Int -> [a] -> [[a]]
 combs n xs = let l = length xs
                           in if n>l then [] else combs xs !! (l-n)
