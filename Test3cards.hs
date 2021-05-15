@@ -4,15 +4,7 @@ import Card
 import System.TimeIt
 
 main :: IO ()
-main = 
-    --test [Card Club R2, Card Spade Ace, Card Diamond R10, Card Heart King, Card Club R8]
-    --test [Card Diamond King, Card Heart R7]
-    --test [Card Club R8, Card Heart R5, Card Diamond R4]
-    --test [Card Club R2, Card Spade Ace]
-    --test [Card Club King, Card Heart Queen]
-    --testAll doubles
-    testAll triples
-    --testAll quadruples
+main = testAll triples
 
 guess :: [Card]
 guess = [Card Club R2, Card Spade Ace, Card Diamond R7, Card Heart King]
