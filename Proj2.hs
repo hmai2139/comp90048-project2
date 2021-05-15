@@ -63,12 +63,12 @@ initialGuess n = (guess, state)
     where guess = [Card suit rank | (suit, rank) <- zip suits ranks]
           distance = max 1 (13 `div` (n + 1))
           r1 = iterate succ minBound !! distance
-          r2 = iterate succ r1 !! dist
+          r2 = iterate succ r1 !! distance
           rn = iterate pred maxBound !! distance
           ranks
-              | n < 13    = take n (cycle (enumFromThenTo r1 r2 rn::[Rank]))
-              | otherwise = take n (cycle [minBound..maxBound]::[Rank])
-          suits = take n (cycle [minBound..maxBound]::[Suit])
+              | n < 13    = take n $ cycle $ enumFromThenTo r1 r2 rn :: [Rank]
+              | otherwise = take n $ cycle $ [minBound..maxBound] :: [Rank]
+          suits = take n $ cycle $ [minBound..maxBound] :: [Suit]
           state = []
 
 {- | Takes as input a pair of the previous guess and game state, 
@@ -87,21 +87,26 @@ nextGuess (guess, state) (e, l, sr, h, ss) = (newGuess, newState)
           newState = tail answers
           --sortedAns = sortOn avgAnsNum answers
           answers
-              | state /= [] = filter (\ a -> feedback a guess == prev) state
-              | otherwise   = filter (\ a -> feedback a guess == prev) (combs (length guess) deck)
+              | state /= [] = delete guess 
+                            $ filter (\ a -> feedback a guess == prev) state
+              | otherwise   = delete guess
+                            $ filter (\ a -> feedback a guess == prev)
+                            $ combs (length guess) deck
+                            
           prev = (e, l, sr, h, ss)
-          deck = [minBound..maxBound]::[Card]
+          deck = [minBound..maxBound] :: [Card]
+          
           -- All combinations of length `n` of a given list.
           combs 0 _ = [[]]
           combs _ [] = []
           combs n (x:xs) = map (x:) (combs (n - 1) xs) ++ combs n xs
 
           -- Group possible Answers to a given Guess by their feedback.
-          sorted g = sortOn (\ a -> feedback a g) answers
-          grouped g = groupBy (\ a1 a2 -> feedback a1 g == feedback a2 g) (sorted g)
+          grouped g = groupBy (\ a1 a2 -> feedback a1 g == feedback a2 g)
+                    $ sortOn (\ a -> feedback a g) answers
 
           -- Expected number of remaining possible Answers for a given Guess.
-          groupSizes g = map length (grouped g)
-          groupSizesSquared g = map (^2) (groupSizes g)
-          avgAnsNum g = fromIntegral (sum (groupSizesSquared g))
-                      / fromIntegral (sum (groupSizes g))
+          groupSizes g = map length $ grouped g
+          groupSizesSquared g = map (^2) $ groupSizes g
+          avgAnsNum g = fromIntegral (sum $ groupSizesSquared g)
+                      / fromIntegral (sum $ groupSizes g)
