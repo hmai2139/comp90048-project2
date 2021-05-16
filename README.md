@@ -1,4 +1,3 @@
-# comp90048-project2
 ## COMP90048 Declarative Programming SM1 2021 - Project 2 - Card Guessing Game
 <p> The objective of this project is to practice and assess your understanding of functional programming and Haskell. You will write code to implement a logical deduction game.
 The Game
